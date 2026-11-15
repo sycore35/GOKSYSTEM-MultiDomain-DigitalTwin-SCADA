@@ -1,0 +1,66 @@
+{
+  "name": "goksystem-desktop",
+  "version": "3.0.0",
+  "description": "GÖKSYSTEM 3.0 Industrial SCADA & Digital Twin Desktop Client",
+  "main": "main.js",
+  "author": "GÖKSYSTEM Engineering Team",
+  "license": "Proprietary",
+  "scripts": {
+    "start": "electron .",
+    "pack:win": "electron-builder --win nsis portable",
+    "pack:mac": "electron-builder --mac dmg"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.goksystem.scada",
+    "productName": "GOKSYSTEM 3.0",
+    "copyright": "Copyright © 2026 GÖKSYSTEM",
+    "directories": {
+      "output": "../dist-desktop"
+    },
+    "files": [
+      "main.js",
+      "../frontend/dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../packaging/dist/goksystem-core",
+        "to": "backend",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "artifactName": "GOKSYSTEM-3.0-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "GOKSYSTEM-3.0.${ext}",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "GÖKSYSTEM 3.0 SCADA",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    }
+  }
+}

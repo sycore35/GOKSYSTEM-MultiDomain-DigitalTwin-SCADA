@@ -1,0 +1,100 @@
+name: Desktop Application Packaging (Windows & macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build Windows Desktop Installer (.exe)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python Dependencies & PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Standalone Backend Binary
+        run: |
+          python -m PyInstaller --name goksystem-core --onedir --clean --noconfirm --distpath packaging/dist --collect-all goksystem --collect-all uvicorn --collect-all fastapi packaging/desktop_backend_entry.py
+
+      - name: Build Frontend Production Bundle
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package Windows Desktop Installer
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run pack:win
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GOKSYSTEM-3.0-Windows-Setup
+          path: dist-desktop/*.exe
+
+  build-macos:
+    name: Build macOS Desktop Package (.dmg)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python Dependencies & PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Standalone macOS Backend Binary
+        run: |
+          python -m PyInstaller --name goksystem-core --onedir --clean --noconfirm --distpath packaging/dist --collect-all goksystem --collect-all uvicorn --collect-all fastapi packaging/desktop_backend_entry.py
+
+      - name: Build Frontend Production Bundle
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package macOS DMG
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run pack:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GOKSYSTEM-3.0-macOS-DMG
+          path: dist-desktop/*.dmg
