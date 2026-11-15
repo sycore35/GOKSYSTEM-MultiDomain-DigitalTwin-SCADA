@@ -29,11 +29,11 @@ export const ProcessZone: React.FC<ProcessZoneProps> = ({
   const pumpRpm = pumpState?.telemetry?.rpm?.value ?? 1450.0;
 
   useFrame((_, delta) => {
-    // 1. Agitator shaft rotation in CSTR tank
+    // Agitator shaft rotation in CSTR tank
     if (agitatorRef.current) {
       agitatorRef.current.rotation.y += delta * 3.5;
     }
-    // 2. Pump drive shaft rotation
+    // Pump drive shaft rotation
     if (pumpShaftRef.current && isPumpRunning) {
       pumpShaftRef.current.rotation.x += delta * (pumpRpm / 60) * 0.2;
     }
@@ -44,7 +44,7 @@ export const ProcessZone: React.FC<ProcessZoneProps> = ({
 
   return (
     <group position={[18, 0, -8]} name="ProcessZone">
-      {/* 1. PROC_TANK_01: 10,000L CSTR Chemical Buffer Tank                */}
+      {/* PROC_TANK_01: 10,000L CSTR Chemical Buffer Tank */}
       <group 
         position={ovr('PROC_TANK_01', [0, 0, 0])} 
         userData={{ deviceId: 'PROC_TANK_01' }}
@@ -143,7 +143,7 @@ export const ProcessZone: React.FC<ProcessZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 2. PROC_PUMP_01: Centrifugal Booster Feed Pump                     */}
+      {/* PROC_PUMP_01: Centrifugal Booster Feed Pump */}
       <group 
         position={ovr('PROC_PUMP_01', [-8, 0.15, 2.5])} 
         userData={{ deviceId: 'PROC_PUMP_01' }}
@@ -222,7 +222,7 @@ export const ProcessZone: React.FC<ProcessZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 3. PROC_VALVE_01: PID Neutralization Control Valve                */}
+      {/* PROC_VALVE_01: PID Neutralization Control Valve */}
       <group 
         position={ovr('PROC_VALVE_01', [-8.7, 1.8, 2.5])} 
         userData={{ deviceId: 'PROC_VALVE_01' }}
@@ -283,7 +283,7 @@ export const ProcessZone: React.FC<ProcessZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 4. Process Piping Network Connecting Tank, Pump, and Overhead Rack */}
+      {/* Process Piping Network Connecting Tank, Pump, and Overhead Rack */}
       <group position={[0, 0, 0]}>
         {/* Pipe: Tank Bottom Orifice to Pump Suction */}
         <mesh position={[-4.5, 0.6, 2.5]} rotation={[0, 0, Math.PI / 2]}>

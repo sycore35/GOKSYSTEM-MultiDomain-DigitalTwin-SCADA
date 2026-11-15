@@ -31,14 +31,14 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
   const isRobotActive = robotState?.status === 'RUNNING' || robotState?.status === 'ACTIVE';
 
   useFrame((_, delta) => {
-    // 1. Conveyor rollers rotation
+    // Conveyor rollers rotation
     if (rollersRef.current && isConveyorRunning) {
       rollersRef.current.children.forEach((roller) => {
         roller.rotation.x += delta * conveyorSpeed * 4;
       });
     }
 
-    // 2. Parts / Pallet advance on conveyor
+    // Parts / Pallet advance on conveyor
     if (palletGroupRef.current && isConveyorRunning) {
       palletGroupRef.current.children.forEach((box) => {
         box.position.x += delta * conveyorSpeed * 1.8;
@@ -48,7 +48,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
       });
     }
 
-    // 3. Robotic arm subtle articulation
+    // Robotic arm subtle articulation
     if (robotWaistRef.current && isRobotActive) {
       robotWaistRef.current.rotation.y = Math.sin(Date.now() * 0.001) * 0.45;
     }
@@ -59,7 +59,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
 
   return (
     <group position={[-20, 0, 5]} name="ProductionZone">
-      {/* 1. FAC_CONVEYOR_01: Main Assembly Line Conveyor                   */}
+      {/* FAC_CONVEYOR_01: Main Assembly Line Conveyor */}
       <group 
         position={ovr('FAC_CONVEYOR_01', [0, 0, 0])} 
         userData={{ deviceId: 'FAC_CONVEYOR_01' }}
@@ -138,7 +138,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 2. FAC_VFD_MOTOR_01: Induction Drive Motor                        */}
+      {/* FAC_VFD_MOTOR_01: Induction Drive Motor */}
       <group 
         position={ovr('FAC_VFD_MOTOR_01', [-9.6, 0.6, 1.6])} 
         userData={{ deviceId: 'FAC_VFD_MOTOR_01' }}
@@ -177,7 +177,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 3. FAC_ROBOT_01: 6-DOF Articulated Assembly Robot                 */}
+      {/* FAC_ROBOT_01: 6-DOF Articulated Assembly Robot */}
       <group 
         position={ovr('FAC_ROBOT_01', [2.5, 0, -3.2])} 
         userData={{ deviceId: 'FAC_ROBOT_01' }}
@@ -271,7 +271,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 4. Industrial CNC Machining Center                                */}
+      {/* Industrial CNC Machining Center */}
       <group position={[-6, 0, -4]}>
         <mesh position={[0, 1.8, 0]} castShadow>
           <boxGeometry args={[4.2, 3.6, 3.8]} />
@@ -304,7 +304,7 @@ export const ProductionZone: React.FC<ProductionZoneProps> = ({
         </group>
       </group>
 
-      {/* 5. Warehouse Forklift (Parked at Staging Bay)                     */}
+      {/* Warehouse Forklift (Parked at Staging Bay) */}
       <group position={[7, 0, 4.5]} rotation={[0, -Math.PI / 4, 0]}>
         {/* Chassis Body */}
         <mesh position={[0, 0.65, 0]} castShadow>

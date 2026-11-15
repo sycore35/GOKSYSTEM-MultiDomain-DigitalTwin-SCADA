@@ -21,7 +21,7 @@ export const PowerZone: React.FC<PowerZoneProps> = ({
 
   return (
     <group position={[-5, 0, -26]} name="PowerZone">
-      {/* 1. GRID_TRAFO_01: 11kV Distribution Power Transformer             */}
+      {/* GRID_TRAFO_01: 11kV Distribution Power Transformer */}
       <group 
         position={ovr('GRID_TRAFO_01', [0, 0, 0])} 
         userData={{ deviceId: 'GRID_TRAFO_01' }}
@@ -103,7 +103,7 @@ export const PowerZone: React.FC<PowerZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 2. GRID_BREAKER_01: 11kV Incomer Vacuum Circuit Breaker (VCB)      */}
+      {/* GRID_BREAKER_01: 11kV Incomer Vacuum Circuit Breaker (VCB) */}
       <group 
         position={ovr('GRID_BREAKER_01', [7.5, 0, 0])} 
         userData={{ deviceId: 'GRID_BREAKER_01' }}
@@ -152,7 +152,7 @@ export const PowerZone: React.FC<PowerZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 3. GRID_BUSBAR_11KV: Main Switchgear Control Cabinet Lineup        */}
+      {/* GRID_BUSBAR_11KV: Main Switchgear Control Cabinet Lineup */}
       <group 
         position={ovr('GRID_BUSBAR_11KV', [12, 0, 0])} 
         userData={{ deviceId: 'GRID_BUSBAR_11KV' }}

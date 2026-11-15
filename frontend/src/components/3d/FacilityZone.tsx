@@ -35,7 +35,7 @@ export const FacilityZone: React.FC<FacilityZoneProps> = ({
 
   return (
     <group position={[0, 0, 24]} name="FacilityZone">
-      {/* 1. BLD_HVAC_ZONE1: Air Handling Chiller & Compressor Package       */}
+      {/* BLD_HVAC_ZONE1: Air Handling Chiller & Compressor Package */}
       <group 
         position={ovr('BLD_HVAC_ZONE1', [-12, 0, 0])} 
         userData={{ deviceId: 'BLD_HVAC_ZONE1' }}
@@ -102,7 +102,7 @@ export const FacilityZone: React.FC<FacilityZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 2. BLD_BMS_BATTERY_01: 250 kWh LiFePO4 Energy Storage (BESS)       */}
+      {/* BLD_BMS_BATTERY_01: 250 kWh LiFePO4 Energy Storage (BESS) */}
       <group 
         position={ovr('BLD_BMS_BATTERY_01', [2, 0, 0])} 
         userData={{ deviceId: 'BLD_BMS_BATTERY_01' }}
@@ -145,7 +145,7 @@ export const FacilityZone: React.FC<FacilityZoneProps> = ({
         </mesh>
       </group>
 
-      {/* 3. BLD_SOLAR_PV_01: 150 kW Solar PV Canopy Array                   */}
+      {/* BLD_SOLAR_PV_01: 150 kW Solar PV Canopy Array */}
       <group 
         position={ovr('BLD_SOLAR_PV_01', [14, 0, 0])} 
         userData={{ deviceId: 'BLD_SOLAR_PV_01' }}
