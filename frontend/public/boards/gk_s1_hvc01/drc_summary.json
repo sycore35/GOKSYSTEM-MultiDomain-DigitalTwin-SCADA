@@ -1,0 +1,28 @@
+{
+  "errors": 0,
+  "warnings": 43,
+  "error_list": [],
+  "by_type": {
+    "silk_edge_clearance:warning": 4,
+    "silk_overlap:warning": 4,
+    "silk_over_copper:warning": 6,
+    "footprint_symbol_mismatch:warning": 2,
+    "net_conflict:warning": 27
+  },
+  "unconnected": 0,
+  "fab_rules": {
+    "min_through_hole_diameter": 0.2,
+    "min_copper_edge_clearance": 0.3
+  },
+  "board": {
+    "size_mm": [
+      84.0,
+      60.0
+    ],
+    "footprints": 41,
+    "nets": 23,
+    "tracks": 360,
+    "vias": 30,
+    "unrouted": 0
+  }
+}

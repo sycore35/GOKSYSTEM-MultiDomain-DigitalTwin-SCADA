@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, CheckCircle2, AlertTriangle, ExternalLink, ChevronDown } from 'lucide-react';
 import { api, usePoll } from './api';
 import { LineChart } from './ui';
-import { DEVICE_META, unitTr, fmtNum, statusTone, statusTr, deviceName } from './meta';
+import { DEVICE_META, unitTr, fmtNum, statusTone, statusTr, deviceName, FEAT_TR } from './meta';
 
 export const POINT_TR: Record<string, string> = {
   speed: 'Hız', target_speed: 'Hedef hız', load_kg: 'Yük', part_count: 'Parça sayısı', pull_cord_tripped: 'Acil çekme ipi', sensor_entry: 'Giriş sensörü',
@@ -18,6 +18,21 @@ export const POINT_TR: Record<string, string> = {
 };
 const pt = (p: string) => POINT_TR[p] || p.replace(/_/g, ' ');
 
+/** Saniyeyi kısa süre metnine çevirir: 42 sn, 3 dk 05 sn, 1 sa 12 dk. */
+const fmtDur = (s: number) => {
+  const t = Math.max(0, Math.floor(s || 0));
+  if (t < 60) return `${t} sn`;
+  if (t < 3600) return `${Math.floor(t / 60)} dk ${String(t % 60).padStart(2, '0')} sn`;
+  return `${Math.floor(t / 3600)} sa ${String(Math.floor((t % 3600) / 60)).padStart(2, '0')} dk`;
+};
+/** Dar hücreler için: 42 sn, 1:08 dk, 2:15 sa. */
+const fmtDurShort = (s: number) => {
+  const t = Math.max(0, Math.floor(s || 0));
+  if (t < 60) return `${t} sn`;
+  if (t < 3600) return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')} dk`;
+  return `${Math.floor(t / 3600)}:${String(Math.floor((t % 3600) / 60)).padStart(2, '0')} sa`;
+};
+
 const Spark: React.FC<{ pts: { t: number; v: number }[]; color: string }> = ({ pts, color }) => {
   if (!pts || pts.length < 2) return <div style={{ height: 28 }} />;
   const W = 120, H = 28;
@@ -32,12 +47,18 @@ const H: React.FC<{ children: React.ReactNode; right?: React.ReactNode }> = ({ c
 );
 
 /** Tıkla-denetle paneli: veriler /api/v1/inspector/{id} (canlı motor verisi + ms halka tamponu trendi). */
-export const InspectorPanel: React.FC<{ deviceId: string; onClose: () => void; onOpenTrends?: (id: string, point?: string) => void }> = ({ deviceId, onClose, onOpenTrends }) => {
+export const InspectorPanel: React.FC<{ deviceId: string; onClose: () => void; onOpenTrends?: (id: string, point?: string) => void; onOpenHardware?: (id: string) => void }> = ({ deviceId, onClose, onOpenTrends, onOpenHardware }) => {
   const { data, error, loading, reload } = usePoll<any>(`/inspector/${encodeURIComponent(deviceId)}?window_s=120`, 1000);
+  const hw = usePoll<any>(`/hardware/nodes/${encodeURIComponent(deviceId)}`, 1000).data;
   const [metric, setMetric] = useState<string>('');
   const [showAll, setShowAll] = useState(false);
   const [msg, setMsg] = useState('');
   const meta = DEVICE_META[deviceId];
+  // Esc paneli kapatır (diyalog davranışı); yazı alanındayken karışmaz
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !(e.target as HTMLElement)?.closest?.('input, textarea, select')) onClose(); };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
 
   const ack = async (id: string) => {
     try { await api(`/alarms/${id}/ack`, { method: 'POST' }); setMsg('Alarm onaylandı.'); reload(); } catch (e: any) { setMsg(e.message); }
@@ -132,16 +153,73 @@ export const InspectorPanel: React.FC<{ deviceId: string; onClose: () => void; o
               <div className="p-3 rounded-[3px]" style={{ background: 'var(--p-raised)', border: '1px solid var(--p-border)' }}>
                 <div className="flex items-baseline justify-between"><span className="font-value" style={{ fontSize: 26 }}>{data.health.health_index}<span style={{ fontSize: 13, color: 'var(--p-dim)' }}> / 100</span></span><span className="p-badge" data-tone={statusTone(data.health.status) === 'ok' ? undefined : statusTone(data.health.status)}>{statusTr(data.health.status)}</span></div>
                 <div className="mt-2 h-1.5 rounded-sm" style={{ background: 'var(--p-sunken)' }}><div className="h-full rounded-sm" style={{ width: `${Math.max(0, Math.min(100, data.health.health_index))}%`, background: data.health.health_index < 50 ? 'var(--p-bad)' : data.health.health_index < 75 ? 'var(--p-warn)' : 'var(--p-dim)' }} /></div>
-                {data.health.explanation.map((e: string, i: number) => <div key={i} style={{ fontSize: 13, color: 'var(--p-muted)', marginTop: 4 }}>• {e}</div>)}
+                {(data.health.contributions || []).filter((c: any) => c.penalty_points > 0).map((c: any) => <div key={c.label} style={{ fontSize: 13, color: 'var(--p-muted)', marginTop: 4 }}>• {FEAT_TR[c.label] || c.label} = {fmtNum(c.value, 2)} {unitTr(c.unit)} (nominal {fmtNum(c.nominal, 1)}, sınır {fmtNum(c.limit, 1)}) → −{fmtNum(c.penalty_points, 1)} puan</div>)}
                 <div style={{ fontSize: 12, color: 'var(--p-dim)', marginTop: 6 }}>Kalibre edilmemiş mühendislik tahminidir.</div>
               </div>
             </section>
           )}
 
+          {data.runtime && (
+            <section>
+              <H right={<span style={{ fontSize: 12, color: 'var(--p-dim)' }}>simülasyon zamanı</span>}>Çalışma geçmişi</H>
+              <div className="grid grid-cols-4 gap-px rounded-[3px] overflow-hidden" style={{ background: 'var(--p-border)', border: '1px solid var(--p-border)' }}>
+                {[
+                  ['Çalışma', fmtDurShort(data.runtime.run_seconds)],
+                  ['Kullanım', `%${fmtNum(data.runtime.utilization_pct, 0)}`],
+                  ['Start', String(data.runtime.starts)],
+                  ['Açma', String(data.runtime.trips)],
+                ].map(([k, v]) => (
+                  <div key={k} className="px-2 py-2" style={{ background: 'var(--p-raised)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--p-dim)' }}>{k}</div>
+                    <div className="font-value" style={{ fontSize: 15 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--p-dim)', marginTop: 6 }}>
+                {statusTr(data.runtime.status)} durumunda {fmtDur(data.sim_time - data.runtime.status_since_sim_time)}
+                {data.runtime.last_start_sim_time != null && <> · son start t={fmtNum(data.runtime.last_start_sim_time, 1)} sn</>}
+                {data.runtime.last_stop_sim_time != null && <> · son stop t={fmtNum(data.runtime.last_stop_sim_time, 1)} sn</>}
+              </div>
+              {data.runtime.transitions.length > 0 && (
+                <ol className="space-y-2 mt-3" style={{ borderLeft: '1px solid var(--p-border-strong)', marginLeft: 4 }}>
+                  {data.runtime.transitions.slice(0, 6).map((t: any) => (
+                    <li key={`${t.sim_time}-${t.to}`} className="pl-3 relative" style={{ fontSize: 13 }}>
+                      <span className="dot absolute" style={{ left: -5, top: 6, width: 9, height: 9 }} data-tone={statusTone(t.to) === 'ok' ? undefined : statusTone(t.to)} />
+                      <div>{statusTr(t.from)} → <b>{statusTr(t.to)}</b></div>
+                      <div className="font-value" style={{ fontSize: 12, color: 'var(--p-dim)' }}>t={fmtNum(t.sim_time, 1)} sn · önceki durum {fmtDur(t.duration_s)} sürdü</div>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+          )}
+
+          {hw && (
+            <section>
+              <H right={onOpenHardware && <button className="flex items-center gap-1 text-[13px] font-medium" style={{ color: 'var(--p-accent)' }} onClick={() => onOpenHardware(deviceId)}>Kart ve ladder<ExternalLink size={13} /></button>}>Saha kartı</H>
+              <div style={{ fontSize: 13, color: 'var(--p-muted)', marginBottom: 6 }}>
+                <span className="font-value" style={{ color: 'var(--p-text)' }}>{(hw.cards || []).map((c: any) => c.card_id).join(' + ') || hw.node_id}</span> · Modbus {hw.address} · {hw.location}
+              </div>
+              <ul className="rounded-[3px] overflow-hidden" style={{ border: '1px solid var(--p-border)' }}>
+                {hw.channels.map((c: any) => (
+                  <li key={c.ch} className="flex items-center justify-between gap-2 px-2 py-1.5" style={{ fontSize: 13, borderBottom: '1px solid var(--p-border)', background: 'var(--p-raised)' }}>
+                    <span className="min-w-0 truncate"><span className="font-value" style={{ color: 'var(--p-dim)' }}>{c.ch}</span> {c.tag} <span style={{ color: 'var(--p-muted)' }}>{c.desc}</span></span>
+                    <span className="font-value shrink-0" style={{ color: c.kind === 'AI' || c.value ? 'var(--p-text)' : 'var(--p-dim)' }}>
+                      {c.kind === 'AI' ? `${fmtNum(c.signal.mA, 2)} mA` : c.value ? 'AÇIK' : 'KAPALI'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div style={{ fontSize: 12, color: 'var(--p-dim)', marginTop: 6 }}>
+                Kart programı: {Object.values(hw.plc.rung_state).filter(Boolean).length}/{hw.plc.program.rungs.length} basamak enerjili · {hw.plc.scan_count} tarama
+              </div>
+            </section>
+          )}
+
           <section>
-            <H>Çalışma geçmişi</H>
+            <H>Alarm geçişleri</H>
             {data.alarm_history.length === 0
-              ? <p style={{ color: 'var(--p-muted)', fontSize: 13 }}>Bu oturumda alarm geçişi kaydı yok. Cihaz kesintisiz normal çalışıyor.</p>
+              ? <p style={{ color: 'var(--p-muted)', fontSize: 13 }}>Bu oturumda alarm geçişi kaydı yok.</p>
               : <ol className="space-y-2" style={{ borderLeft: '1px solid var(--p-border-strong)', marginLeft: 4 }}>
                   {data.alarm_history.slice(0, 8).map((e: any) => (
                     <li key={e.seq} className="pl-3 relative" style={{ fontSize: 13 }}>

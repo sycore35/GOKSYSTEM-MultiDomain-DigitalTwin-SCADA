@@ -64,3 +64,47 @@ const TYPE_TR: Record<string, string> = { BATTERY: 'Batarya', HVAC: 'Klima', INV
   PLC: 'PLC', PUMP: 'Pompa', VALVE: 'Vana', SENSOR: 'Sensör', TRANSFORMER: 'Trafo', TANK: 'Tank', VFD: 'Sürücü', DRIVE: 'Sürücü' };
 export const typeTr = (t?: string) => (t && TYPE_TR[t]) || t || '';
 export const zoneTr = (z?: string) => (z || '').replace(/^BUILDING zone$/i, 'Bina').replace(/^FACTORY zone$/i, 'Fabrika').replace(/^GRID zone$/i, 'Elektrik').replace(/^PROCESS zone$/i, 'Proses');
+
+/** Bakım sağlık modeli özellik adları (backend İngilizce etiket döner). */
+export const FEAT_TR: Record<string, string> = { 'Vibration RMS': 'Titreşim (RMS)', 'Motor current': 'Motor akımı', 'Winding temperature': 'Sargı sıcaklığı', 'Pump motor current': 'Pompa motoru akımı',
+  'Casing/motor temperature': 'Gövde/motor sıcaklığı', 'Loading': 'Yüklenme', 'Winding hot-spot': 'Sargı sıcak noktası', 'Top-oil temperature': 'Üst yağ sıcaklığı' };
+
+/** Senaryo kataloğu çevirisi (backend kimliği → Türkçe ad ve açıklama). */
+export const SCENARIO_TR: Record<string, { name: string; desc: string }> = {
+  normal: { name: 'Normal işletme', desc: 'Olay eklenmeden temel tesis davranışı.' },
+  fault: { name: 'Zincirleme arızalar', desc: 'Sırayla rulman aşınması, motor aşırı yükü, tank tahliye tıkanması ve 11 kV aşırı akım açması.' },
+  maintenance: { name: 'Planlı bakım', desc: 'Konveyör ve pompa bakım için durdurulur, ardından yeniden başlatılır.' },
+  emergency_stop: { name: 'Acil durdurma', desc: 't=5 sn’de ipli acil stop, t=30 sn’de açma resetlenir, t=35 sn’de yeniden başlatılır.' },
+  production: { name: 'Yüksek üretim', desc: 'Konveyör yüksek hız ve ağır yükte; gücü, sıcaklığı ve aşırı yük payını izleyin.' },
+};
+const EVENT_TR: Record<string, string> = {
+  BEARING_WEAR: 'Rulman aşınması', PUMP_BEARING_WEAR: 'Pompa rulman aşınması', MOTOR_OVERLOAD: 'Motor aşırı yükü', DRAIN_BLOCKAGE: 'Tahliye tıkanması',
+  OVERCURRENT_TRIP: 'Aşırı akım açması', E_STOP: 'Acil stop', RESET_TRIP: 'Açma reseti', SET_SPEED: 'Hız ayarı', START: 'Başlat', STOP: 'Durdur',
+};
+/** "BEARING_WEAR on FAC_VFD_MOTOR_01" / "STOP FAC_CONVEYOR_01" → "Rulman aşınması · Sürücülü motor". */
+export const eventLabelTr = (label: string): string => {
+  const m = /^([A-Z_]+)(?: on)? ([A-Z0-9_]+)$/.exec(label || '');
+  return m ? `${EVENT_TR[m[1]] || m[1]} · ${deviceName(m[2])}` : label;
+};
+
+/** Alarm açıklamaları (backend İngilizce mesaj döner; kimliğe göre Türkçesi). */
+const ALARM_TR: Record<string, string> = {
+  ALM_FAC_MOTOR_TEMP: 'Konveyör motoru stator sıcaklığı 75 °C eşiğini aştı',
+  ALM_FAC_VIBRATION: 'Rulman titreşimi ISO 10816 D bölgesinde (tehlike / açma)',
+  ALM_FAC_MOTOR_CURRENT: 'Motor akımı 28 A üstünde (aşırı yük uyarısı)',
+  ALM_FAC_PULL_CORD: 'Acil çekme ipi çekildi — konveyör kilitlendi',
+  ALM_PROC_PUMP_VIBRATION: 'Pompa titreşimi 4,5 mm/s üstünde',
+  ALM_PROC_LEVEL_HIGH: 'Tampon tank seviyesi yüksek (> %90)',
+  ALM_PROC_LEVEL_LOW: 'Tampon tank seviyesi düşük (< %15) — transfer pompası kavitasyon riski',
+  ALM_PROC_PH_HIGH: 'Atık su pH değeri nötralizasyon aralığı dışında (> 8,5)',
+  ALM_GRID_HOTSPOT: 'Trafo sargı sıcak noktası 110 °C sınırını aştı',
+  ALM_GRID_BREAKER_TRIP: 'Kesici koruma kilitlemesiyle açtı',
+  ALM_BLD_CO2_HIGH: 'Zon 1 CO₂ derişimi 1.000 ppm’i aştı',
+  ALM_BLD_BMS_LOW_SOC: 'Batarya şarj durumu kritik düşük (< %15) — deşarj engellendi',
+};
+export const alarmText = (a: { alarm_id: string; message?: string }) => {
+  const t = ALARM_TR[a.alarm_id];
+  if (!t) return a.message || a.alarm_id;
+  const ansi = a.alarm_id === 'ALM_GRID_BREAKER_TRIP' && /ANSI (\d+)/.exec(a.message || '');
+  return ansi ? `${t} (ANSI ${ansi[1]})` : t;
+};

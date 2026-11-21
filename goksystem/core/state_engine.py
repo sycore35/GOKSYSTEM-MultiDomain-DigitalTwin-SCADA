@@ -104,6 +104,11 @@ class StateEngine:
         with self._lock:
             return list(self._states.keys())
 
+    def statuses(self) -> Dict[str, str]:
+        """Cheap {device_id: status} snapshot (no deep copies)."""
+        with self._lock:
+            return {d: st.status for d, st in self._states.items()}
+
     def iter_points(self) -> List[tuple]:
         """Cheap (device_id, point_id, value, unit) snapshot without deep copies (for recorders)."""
         with self._lock:

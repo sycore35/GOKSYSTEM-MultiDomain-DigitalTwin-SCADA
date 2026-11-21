@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api, usePoll } from './api';
+import { SCENARIO_TR, eventLabelTr } from './meta';
 import { Badge, Btn, Card, Field, LineChart, Notice, Page, Stat, State, Table, useTr } from './ui';
 
 /* Trend Analyzer + Historian */
@@ -138,18 +139,18 @@ export const ScenariosView: React.FC = () => {
     <Page title={tr('Multi-Scenario Engine', 'Çoklu Senaryo Motoru')} subtitle={tr('Normal, fault, maintenance, emergency stop and production timelines applied to the live engine', 'Normal, arıza, bakım, acil durdurma ve üretim zaman çizelgeleri canlı motora uygulanır')}
       actions={<Btn variant="danger" onClick={async () => { try { await api('/scenarios/stop', { method: 'POST' }); setMsg(tr('Scenario stopped, plant reset', 'Senaryo durduruldu, tesis sıfırlandı')); st.reload(); } catch (e: any) { setMsg(e.message); } }}>{tr('Stop & reset plant', 'Durdur ve tesisi sıfırla')}</Btn>}>
       <Notice tone="warn">{tr('Starting a scenario resets the simulation (alarms, models) before applying its initial conditions.', 'Senaryo başlatmak, başlangıç koşullarını uygulamadan önce simülasyonu (alarm, model) sıfırlar.')}</Notice>
-      {s?.scenario_id && <Card title={`${tr('Active', 'Aktif')}: ${s.name}`} right={<Badge tone={s.finished ? 'dim' : 'ok'}>{s.finished ? 'FINISHED' : 'RUNNING'}</Badge>}>
+      {s?.scenario_id && <Card title={`${tr('Active', 'Aktif')}: ${SCENARIO_TR[s.scenario_id]?.name || s.name}`} right={<Badge tone={s.finished ? 'dim' : 'ok'}>{s.finished ? tr('FINISHED', 'BİTTİ') : tr('RUNNING', 'ÇALIŞIYOR')}</Badge>}>
         <div role="progressbar" aria-valuemin={0} aria-valuemax={s.duration_sec} aria-valuenow={Math.min(s.elapsed_sec, s.duration_sec)} className="h-2 rounded" style={{ background: 'var(--p-raised)' }}>
           <div className="h-2 rounded" style={{ width: `${Math.min(100, (s.elapsed_sec / s.duration_sec) * 100)}%`, background: 'var(--p-accent)' }} /></div>
         <div className="text-[11px] font-mono mt-1" style={{ color: 'var(--p-muted)' }}>{s.elapsed_sec} / {s.duration_sec} s</div>
-        <ul className="text-[11px] font-mono mt-2 space-y-0.5">{s.events.map((e: any, i: number) => <li key={i} style={{ color: e.fired ? 'var(--p-ok)' : 'var(--p-dim)' }}>{e.fired ? '✔' : '○'} t={e.t}s · {e.label}</li>)}</ul>
-        {s.log.length > 0 && <div className="text-[10px] font-mono mt-2" style={{ color: 'var(--p-muted)' }}>{s.log.map((l: any, i: number) => <div key={i}>[{l.scenario_t}s] {l.label}: {l.ok ? 'OK' : 'REJECTED'} - {l.message}</div>)}</div>}
+        <ul className="text-[11px] font-mono mt-2 space-y-0.5">{s.events.map((e: any, i: number) => <li key={i} style={{ color: e.fired ? 'var(--p-ok)' : 'var(--p-dim)' }}>{e.fired ? '✔' : '○'} t={e.t}s · {eventLabelTr(e.label)}</li>)}</ul>
+        {s.log.length > 0 && <div className="text-[10px] font-mono mt-2" style={{ color: 'var(--p-muted)' }}>{s.log.map((l: any, i: number) => <div key={i}>[{l.scenario_t}s] {eventLabelTr(l.label)}: {l.ok ? tr('OK', 'tamam') : tr('REJECTED', 'reddedildi')} - {l.message}</div>)}</div>}
       </Card>}
       <State loading={cat.loading} error={cat.error} />
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-2">
-        {cat.data?.map(c => <Card key={c.scenario_id} title={c.name} right={<span className="text-[10px] font-mono" style={{ color: 'var(--p-dim)' }}>{c.duration_sec}s</span>}>
-          <p className="text-[11px] font-mono mb-2" style={{ color: 'var(--p-muted)' }}>{c.description}</p>
-          <ul className="text-[10px] font-mono mb-2" style={{ color: 'var(--p-dim)' }}>{c.events.map((e: any, i: number) => <li key={i}>t={e.t}s · {e.label}</li>)}{c.events.length === 0 && <li>{tr('no scheduled events', 'planlı olay yok')}</li>}</ul>
+        {cat.data?.map(c => <Card key={c.scenario_id} title={SCENARIO_TR[c.scenario_id]?.name || c.name} right={<span className="text-[10px] font-mono" style={{ color: 'var(--p-dim)' }}>{c.duration_sec}s</span>}>
+          <p className="text-[11px] font-mono mb-2" style={{ color: 'var(--p-muted)' }}>{SCENARIO_TR[c.scenario_id]?.desc || c.description}</p>
+          <ul className="text-[10px] font-mono mb-2" style={{ color: 'var(--p-dim)' }}>{c.events.map((e: any, i: number) => <li key={i}>t={e.t}s · {eventLabelTr(e.label)}</li>)}{c.events.length === 0 && <li>{tr('no scheduled events', 'planlı olay yok')}</li>}</ul>
           <Btn variant="primary" onClick={() => run(c.scenario_id)}>{tr('Run', 'Çalıştır')}</Btn></Card>)}
       </div>
       {msg && <div role="status" className="text-[11px] font-mono" style={{ color: 'var(--p-muted)' }}>{msg}</div>}

@@ -1,5 +1,6 @@
 """Engine robustness: determinism, fault isolation, timing profiler, alarm center, TSDB."""
 import hashlib
+import os
 import time
 import pytest
 from goksystem.core.device_registry import DeviceRegistry
@@ -63,6 +64,7 @@ def test_domain_exception_marks_model_fault_and_others_continue():
     assert e.profiler.snapshot()["model_errors"]["grid"] == 20
 
 
+@pytest.mark.skipif(os.environ.get("CI") == "true", reason="wall-clock timing is not meaningful on shared CI runners")
 def test_realtime_loop_timing_stats():
     e = make_engine()
     e.start()

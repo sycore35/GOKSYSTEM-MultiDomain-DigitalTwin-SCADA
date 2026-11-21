@@ -27,16 +27,16 @@ export const Lights: React.FC<{ dark: boolean }> = ({ dark }) => {
   );
 };
 
-/** Açık gri zemin + ince metre ızgarası. */
+/** Zemin + ince metre ızgarası (koyu temada koyu zemin: açık gri ekipman öne çıkar). */
 export const Floor: React.FC<{ dark: boolean }> = ({ dark }) => {
-  const base = dark ? '#A5ACB3' : '#D6D9DD';
+  const base = dark ? '#33383E' : '#D6D9DD';
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[120, 100]} />
-        <meshStandardMaterial color={base} roughness={0.95} metalness={0} />
+        <meshStandardMaterial color={base} roughness={0.95} metalness={0} userData={{ gokSkip: true }} />
       </mesh>
-      <gridHelper args={[100, 50, dark ? '#8E959C' : '#BFC4C9', dark ? '#989FA6' : '#C9CDD2']} position={[0, 0.005, 0]} />
+      <gridHelper args={[100, 50, dark ? '#4A5158' : '#BFC4C9', dark ? '#40464D' : '#C9CDD2']} position={[0, 0.005, 0]} />
     </group>
   );
 };
@@ -56,6 +56,7 @@ export const Normalizer: React.FC = () => {
         if (m.isMeshBasicMaterial && m.wireframe) { o.visible = false; continue; }   // eski seçim çerçeveleri
         if (!m.isMeshStandardMaterial) continue;
         const u = m.userData;
+        if (u.gokSkip) continue;                       // zemin/plaka renkleri tema tarafından belirlenir
         if (!u.gokNorm || !m.color.equals(u.gokNorm)) {
           const c = m.color.clone();
           const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
@@ -128,14 +129,14 @@ export const ZonePlates: React.FC<{ dark: boolean; boxes: AssetBox[] }> = ({ dar
     }, 500);
     return () => clearTimeout(t);
   }, [scene, boxes.length]);
-  const line = dark ? '#6F777F' : '#8C939A';
+  const line = dark ? '#7C858D' : '#8C939A';
   return (
     <group>
       {zones.map(z => (
         <group key={z.label} position={[z.cx, 0.02, z.cz]}>
           <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[z.w, z.d]} />
-            <meshStandardMaterial color={dark ? '#B7BDC3' : '#E8EAEC'} roughness={0.95} />
+            <meshStandardMaterial color={dark ? '#41474E' : '#E8EAEC'} roughness={0.95} userData={{ gokSkip: true }} />
           </mesh>
           <lineSegments rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
             <edgesGeometry args={[new THREE.PlaneGeometry(z.w, z.d)]} />
@@ -175,7 +176,7 @@ const labelLift = (boxes: AssetBox[]): Record<string, number> => {
   const out: Record<string, number> = {}; const placed: AssetBox[] = [];
   [...boxes].sort((a, b) => a.top - b.top || a.center.x - b.center.x).forEach(b => {
     const near = placed.filter(p => Math.hypot(p.center.x - b.center.x, p.center.z - b.center.z) < 12).length;
-    out[b.id] = Math.min(near, 3) * 1.8; placed.push(b);
+    out[b.id] = Math.min(near, 3) * 2.6; placed.push(b);
   });
   return out;
 };

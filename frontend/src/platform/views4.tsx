@@ -34,7 +34,8 @@ export const OperatorsView: React.FC = () => {
   const tr = useTr();
   const mode = usePoll<any>('/auth/mode', 0);
   const me = useOperator();
-  const users = usePoll<any[]>('/operators', 0);
+  const canManage = !!me.data?.permissions?.includes('MANAGE_USERS');
+  const users = usePoll<any[]>(canManage ? '/operators' : null, 0);     // yetkisizken 403 isteği gönderme
   const [filter, setFilter] = useState('');
   const log = usePoll<any[]>(`/audit/log?limit=100${filter ? `&action=${encodeURIComponent(filter)}` : ''}`, 3000);
   const chain = usePoll<any>('/audit/verify', 5000);
@@ -48,9 +49,9 @@ export const OperatorsView: React.FC = () => {
           {mode.data && Object.entries<string[]>(mode.data.roles).map(([r, p]) => <div key={r} className="mb-2 text-[11px] font-mono"><b style={{ color: me.data?.role === r ? 'var(--p-accent)' : 'var(--p-text)' }}>{r}</b><div style={{ color: 'var(--p-dim)' }}>{p.join(', ')}</div></div>)}
         </Card>
         <Card title={tr('Users', 'Kullanıcılar')}>
-          {users.error ? <div className="text-[11px] font-mono" style={{ color: 'var(--p-warn)' }}>{tr('User list needs MANAGE_USERS (log in as admin).', 'Kullanıcı listesi MANAGE_USERS gerektirir (admin ile girin).')}</div> :
+          {!canManage || users.error ? <div className="text-[11px] font-mono" style={{ color: 'var(--p-warn)' }}>{tr('User list needs MANAGE_USERS (log in as admin).', 'Kullanıcı listesi MANAGE_USERS gerektirir (admin ile girin).')}</div> :
             <Table head={[tr('User', 'Kullanıcı'), tr('Role', 'Rol'), tr('Active', 'Aktif')]}>{users.data?.map(u => <tr key={u.username}><td>{u.username}</td><td>{u.role}</td><td>{u.active ? '✔' : '✖'}</td></tr>)}</Table>}
-          {!users.error && <form onSubmit={add} className="grid grid-cols-2 gap-2 mt-3">
+          {canManage && !users.error && <form onSubmit={add} className="grid grid-cols-2 gap-2 mt-3">
             <Field label={tr('Username', 'Kullanıcı adı')}><input required className="p-in" value={nu.username} onChange={e => setNu({ ...nu, username: e.target.value })} /></Field>
             <Field label={tr('Role', 'Rol')}><select className="p-in" value={nu.role} onChange={e => setNu({ ...nu, role: e.target.value })}>{['VIEWER', 'OPERATOR', 'ENGINEER', 'ADMIN'].map(r => <option key={r}>{r}</option>)}</select></Field>
             <Field label="PIN (min 4)"><input required type="password" minLength={4} autoComplete="new-password" className="p-in" value={nu.pin} onChange={e => setNu({ ...nu, pin: e.target.value })} /></Field>

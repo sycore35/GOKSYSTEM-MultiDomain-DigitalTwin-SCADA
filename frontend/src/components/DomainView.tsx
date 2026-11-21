@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Play, Square, RotateCcw, Zap, TriangleAlert, OctagonX } from 'lucide-react';
 import { DeviceRuntimeState, AlarmRecord } from '../types';
 import { Panel } from '../platform/kit';
-import { DEVICE_META, unitTr, fmtNum, statusTone, statusTr } from '../platform/meta';
+import { DEVICE_META, unitTr, fmtNum, statusTone, statusTr, alarmText } from '../platform/meta';
 import { POINT_TR } from '../platform/InspectorPanel';
 import { useTr } from '../platform/ui';
 
@@ -130,7 +130,7 @@ export const DomainView: React.FC<Props> = ({ domain, devices, alarms, onCommand
                 <li key={a.alarm_id} className="flex gap-2 items-start text-[14px]">
                   <span className="dot mt-1.5" data-tone={a.severity === 'CRITICAL' || a.severity === 'HIGH' ? 'bad' : 'warn'} />
                   <div className="min-w-0"><div className="font-medium">{DEVICE_META[a.source_device]?.name || a.source_device}</div>
-                    <div style={{ color: 'var(--p-muted)', fontSize: 13 }}>{a.message} · {sevTr[a.severity]}</div></div>
+                    <div style={{ color: 'var(--p-muted)', fontSize: 13 }}>{alarmText(a)} · {sevTr[a.severity]}</div></div>
                 </li>
               ))}
             </ul>

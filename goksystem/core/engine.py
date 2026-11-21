@@ -69,6 +69,8 @@ class SimulationEngine:
         self.tsdb = None                           # goksystem.modules.tsdb.TimeSeriesDB
         self.plc = None                            # goksystem.modules.plc.PLCRuntime
         self.energy = None                         # goksystem.modules.energy.EnergyManager
+        self.runtime = None                        # goksystem.modules.runtime.RuntimeTracker
+        self.field_nodes = None                    # goksystem.modules.hardware.FieldNodes (one GK-N1 card per asset)
         self._hooks: List[tuple] = []              # (name, fn(dt, sim_time)) executed each tick, fault-isolated
         self._model_errors: Dict[str, bool] = {}
         self._scenario_fired: set = set()
@@ -153,6 +155,10 @@ class SimulationEngine:
             self._model_errors = {}
             if self.energy:
                 self.energy.reset()
+            if self.runtime:
+                self.runtime.reset()
+            if self.field_nodes:
+                self.field_nodes.reset()
             self.factory = FactoryDomain(self.state_engine, self.alarm_engine)
             self.grid = GridDomain(self.state_engine, self.alarm_engine)
             self.process = ProcessDomain(self.state_engine, self.alarm_engine)
@@ -320,9 +326,13 @@ class SimulationEngine:
             self._guarded("energy", lambda: self.energy.update(self.state_engine, dt))
         if self.plc:
             self._guarded("plc", lambda: self.plc.scan(self.state_engine, dt * 1000.0))
+        if self.field_nodes:
+            self._guarded("field_nodes", lambda: self.field_nodes.scan(self.state_engine, dt * 1000.0))
         for name, fn in list(self._hooks):
             self._guarded(name, lambda fn=fn: fn(dt, st))
         self._guarded("alarm_status", self._sync_alarm_status)
+        if self.runtime:
+            self._guarded("runtime", lambda: self.runtime.update(self.state_engine.statuses(), dt, st))
 
         # Record to Historian (1 Hz) and the millisecond time-series store (every tick)
         if self.historian and (self.step_count % 10 == 0):

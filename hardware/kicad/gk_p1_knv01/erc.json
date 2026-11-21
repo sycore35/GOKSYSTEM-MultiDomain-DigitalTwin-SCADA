@@ -1,0 +1,53 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-18T03:15:06",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.8",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/7c68f69d-7071-4355-b333-566f6ba0d091",
+            "violations": [
+                {
+                    "description": "'MAX3485' sembolü 'Interface_UART' kütüphanesindeki kopyayla eşleşmiyor",
+                    "items": [
+                        {
+                            "description": "SembollerU7 [MAX3485]",
+                            "pos": {
+                                "x": 53.34,
+                                "y": 410.21
+                            },
+                            "uuid": "864c81fd-6413-4b9e-b53b-946d40634b3f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                }
+            ]
+        }
+    ],
+    "source": "gk_p1_knv01.kicad_sch"
+}

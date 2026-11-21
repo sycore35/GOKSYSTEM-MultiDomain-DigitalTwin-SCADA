@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { statusTr, typeTr, zoneTr } from './meta';
+import { alarmText, deviceName, fmtNum, statusTr, typeTr, zoneTr } from './meta';
 import { api, usePoll } from './api';
 import { Badge, Btn, Card, Field, Notice, Page, Stat, State, Table, toneFor, useTr } from './ui';
 
@@ -43,7 +43,7 @@ export const PerfView: React.FC = () => {
               <tr key={n}><td>{n}</td><td>{d.p50}</td><td>{d.p95}</td><td>{d.p99}</td><td>{d.max}</td><td>{d.mean}</td></tr>))}
           </Table>
           <div className="text-[10px] font-mono mt-2" style={{ color: 'var(--p-dim)' }}>
-            {Object.entries(data.definitions).map(([k, v]) => <div key={k}><b>{k}</b>: {v as string}</div>)}
+            <div><b>jitter</b>: gerçek tick periyodu ile nominal periyot farkının standart sapması</div><div><b>aşım</b>: hesap süresi periyot bütçesini aşan adım</div><div><b>kaçan deadline</b>: planlanan zamanından bir tam periyottan geç başlayan tick</div>
           </div>
           {Object.keys(data.model_errors).length > 0 && <div className="mt-2 text-[11px] font-mono" style={{ color: 'var(--p-warn)' }}>{Object.entries(data.last_error).map(([k, v]) => <div key={k}>{k}: {v as string}</div>)}</div>}
         </Card>
@@ -91,7 +91,7 @@ export const AlarmCenter: React.FC = () => {
         <Stat label={tr('Shelved', 'Rafta')} value={st.shelved} />
         <Stat label={tr('Rate / 10 min', 'Oran / 10 dk')} value={st.alarm_rate_per_10min} />
         <Stat label="P1 / P2 / P3 / P4" value={[1, 2, 3, 4].map(p => st.by_priority[p] ?? 0).join(' / ')} />
-        <Stat label={tr('Mean time to ack', 'Ort. onay süresi')} value={st.mean_time_to_ack_s ?? '-'} unit="s" />
+        <Stat label={tr('Mean time to ack', 'Ort. onay süresi')} value={st.mean_time_to_ack_s != null ? fmtNum(st.mean_time_to_ack_s, 1) : '—'} unit={st.mean_time_to_ack_s != null ? 'sn' : undefined} />
       </div>}
       <div role="tablist" aria-label="Alarm views" className="flex flex-wrap gap-1">
         {(['active', 'shelved', 'history', 'config'] as const).map(k => (
@@ -113,15 +113,15 @@ export const AlarmCenter: React.FC = () => {
             <div className="mt-3">
               <div style={{ color: 'var(--p-muted)', fontSize: 12, marginBottom: 6 }}>{tr('Recent transitions', 'Son geçişler')}</div>
               <Table head={[tr('Time', 'Zaman'), 'Alarm', tr('Transition', 'Geçiş'), 'P']}>
-                {hist.data.slice(0, 5).map((e: any) => <tr key={e.seq}><td className="font-value">{new Date(e.wall_time * 1000).toLocaleTimeString('tr-TR')}</td><td>{e.alarm_id}</td><td>{e.from_state ?? '∅'} → {e.to_state}</td><td>{e.priority}</td></tr>)}
+                {hist.data.slice(0, 5).map((e: any) => <tr key={e.seq}><td className="font-value">{new Date(e.wall_time * 1000).toLocaleTimeString('tr-TR')}</td><td>{e.alarm_id}</td><td>{e.from_state ? statusTr(e.from_state) : '∅'} → {statusTr(e.to_state)}</td><td>{e.priority}</td></tr>)}
               </Table>
             </div>)}
         </Card>) : (
         <Card><Table head={['P', tr('State', 'Durum'), 'Alarm', tr('Device', 'Cihaz'), tr('Value / limit', 'Değer / limit'), tr('Occ.', 'Adet'), '']}>
           {[...data.active].sort((x: any, y: any) => x.priority - y.priority || x.trigger_sim_time - y.trigger_sim_time).map((al: any) => (
-            <tr key={al.alarm_id}><td><b>P{al.priority}</b></td><td><Badge tone={toneFor(al.state)}>{al.state}</Badge></td>
-              <td title={al.message}>{al.alarm_id}<div className="text-[10px]" style={{ color: 'var(--p-dim)' }}>{al.message}</div></td><td>{al.source_device}</td>
-              <td>{al.current_value} / {al.setpoint_or_limit}</td><td>{al.occurrences}</td>
+            <tr key={al.alarm_id}><td><b>P{al.priority}</b></td><td><Badge tone={toneFor(al.state)}>{statusTr(al.state)}</Badge></td>
+              <td title={al.message}>{al.alarm_id}<div className="text-[10px]" style={{ color: 'var(--p-dim)' }}>{alarmText(al)}</div></td><td>{deviceName(al.source_device)}</td>
+              <td className="font-value">{fmtNum(al.current_value, 2)} / {fmtNum(al.setpoint_or_limit, 2)}</td><td>{al.occurrences}</td>
               <td className="whitespace-nowrap">
                 {(al.state === 'UNACK_ALARM' || al.state === 'RTN_UNACK') && <Btn onClick={() => doAck(al.alarm_id)} aria-label={`${tr('Acknowledge', 'Onayla')} ${al.alarm_id}`}>{tr('ACK', 'ONAY')}</Btn>}{' '}
                 <Btn onClick={() => setShelf({ id: al.alarm_id, reason: '', min: 10 })} aria-label={`${tr('Shelve', 'Rafa al')} ${al.alarm_id}`}>{tr('Shelve', 'Rafa al')}</Btn></td></tr>))}
@@ -141,7 +141,7 @@ export const AlarmCenter: React.FC = () => {
         </Table></Card>))}
       {tab === 'history' && (hist.data && hist.data.length ? (
         <Card><Table head={[tr('Time', 'Zaman'), 'Alarm', tr('Transition', 'Geçiş'), 'P', tr('Value', 'Değer'), tr('Operator', 'Operatör'), tr('Note', 'Not')]}>
-          {hist.data.map((e: any) => <tr key={e.seq}><td>{new Date(e.wall_time * 1000).toLocaleTimeString()}</td><td>{e.alarm_id}</td><td>{e.from_state ?? '∅'} → {e.to_state}</td><td>{e.priority}</td><td>{e.value}</td><td>{e.operator ?? ''}</td><td>{e.note}</td></tr>)}
+          {hist.data.map((e: any) => <tr key={e.seq}><td>{new Date(e.wall_time * 1000).toLocaleTimeString('tr-TR')}</td><td>{e.alarm_id}</td><td>{e.from_state ? statusTr(e.from_state) : '∅'} → {statusTr(e.to_state)}</td><td>{e.priority}</td><td>{e.value}</td><td>{e.operator ?? ''}</td><td>{e.note}</td></tr>)}
         </Table></Card>) : <State empty emptyText={tr('No alarm events yet. Inject a fault from the Factory view or run the "fault" scenario.', 'Henüz alarm olayı yok. Fabrika görünümünden hata verin ya da "fault" senaryosunu çalıştırın.')} />)}
       {tab === 'config' && data && (
         <Card title={tr('Deadband and on-delay per alarm', 'Alarm başına deadband ve gecikme')}>

@@ -11,8 +11,6 @@
   "dependencies": {
     "@react-three/drei": "^9.117.3",
     "@react-three/fiber": "^8.17.10",
-    "@react-three/postprocessing": "^2.16.3",
-    "leva": "^0.9.35",
     "lucide-react": "^1.16.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

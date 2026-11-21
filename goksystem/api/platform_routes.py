@@ -9,7 +9,7 @@ import numpy as np
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
 
 from goksystem.core.models import ScenarioDefinition
-from goksystem.modules import inspector, maintenance, pid_studio, scenarios as scn
+from goksystem.modules import hardware, inspector, maintenance, pid_studio, scenarios as scn
 from goksystem.modules.operators import ROLE_PERMISSIONS, Operator
 from goksystem.modules.plc import DEFAULT_PROGRAM, PLCError
 from goksystem.modules.store import ASSET_STATUS, ASSET_TYPES, TWIN_KINDS, ValidationError
@@ -507,6 +507,19 @@ def build_router(ctx) -> APIRouter:
             raise HTTPException(400, e.errors[0])
         audit(op, "PLC_FORCE", str(body.get("tag")), {"value": body.get("value")})
         return plc.snapshot()
+
+    # field hardware: one GK-N1 I/O card + ladder program per asset (read-only: outputs never command the plant)
+    @r.get("/hardware/nodes")
+    def hw_nodes():
+        nodes = engine.field_nodes
+        return {"families": hardware.FAMILIES, "nodes": nodes.summary() if nodes else []}
+
+    @r.get("/hardware/nodes/{device_id}")
+    def hw_node(device_id: str):
+        res = engine.field_nodes.detail(device_id, engine.state_engine) if engine.field_nodes else None
+        if res is None:
+            raise HTTPException(404, f"no field node for '{device_id}'")
+        return res
 
     # twin editor
     @r.get("/twin/layout")

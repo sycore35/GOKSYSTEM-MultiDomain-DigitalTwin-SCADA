@@ -1,6 +1,7 @@
 """FastAPI app: wires the engine, protocol adapters and routes together, streams state deltas over /ws and serves the built frontend if present."""
 
 import os
+import sys
 import asyncio
 from types import SimpleNamespace
 from contextlib import asynccontextmanager
@@ -8,6 +9,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+
+# The 10 Hz sim thread shares the GIL with uvicorn, WebSocket and protocol threads. With the default 5 ms
+# switch interval a waking sim thread can wait up to 5 ms (often several hand-offs) for the GIL, which showed
+# up as 5-60 ms period error under UI load. A 0.5 ms interval bounds that wait. Override: GOKSYSTEM_GIL_SWITCH_S.
+sys.setswitchinterval(float(os.environ.get("GOKSYSTEM_GIL_SWITCH_S", "0.0005")))
 
 from goksystem.core.device_registry import DeviceRegistry
 from goksystem.core.state_engine import StateEngine
@@ -26,6 +32,8 @@ from goksystem.modules.store import PlatformStore
 from goksystem.modules.tsdb import TimeSeriesDB
 from goksystem.modules.operators import OperatorManager
 from goksystem.modules.energy import EnergyManager
+from goksystem.modules.runtime import RuntimeTracker
+from goksystem.modules.hardware import FieldNodes
 from goksystem.modules.plc import PLCRuntime
 
 DATA_DIR = os.environ.get("GOKSYSTEM_DATA_DIR") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
@@ -49,6 +57,8 @@ tsdb = TimeSeriesDB(PLATFORM_DB_PATH)
 ops = OperatorManager(PLATFORM_DB_PATH)
 engine.tsdb = tsdb
 engine.energy = EnergyManager()
+engine.runtime = RuntimeTracker()
+engine.field_nodes = FieldNodes()
 engine.plc = PLCRuntime()
 engine.plc.command_sink = lambda dev, op_, params: engine.execute_command(__import__("goksystem.core.models", fromlist=["CommandRequest"]).CommandRequest(
     command_id=f"plc-{engine.step_count}", target_device=dev, operation=op_, parameters=params,
@@ -91,6 +101,10 @@ async def lifespan(app: FastAPI):
         engine.factoryio_adapter.start()
     store.audit("system", "-", "SERVER_START", "goksystem", "OK", {"auth_required": ops.auth_required})
     task = asyncio.create_task(streaming_task())
+    # Move startup objects to the permanent GC generation: measured gen2 pauses dropped from 14-122 ms to 2-4 ms
+    # under load (scripts/measure_tick_under_load.py), removing the largest 10 Hz tick outliers.
+    import gc
+    gc.collect(); gc.freeze()
     yield
     task.cancel()
     engine.factoryio_adapter.stop()

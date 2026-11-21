@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { api, usePoll } from './api';
-import { deviceName, statusTr, unitTr } from './meta';
+import { deviceName, FEAT_TR, statusTr, unitTr } from './meta';
 import { Badge, Btn, Card, Field, LineChart, Notice, Page, Stat, State, Table, toneFor, useTr } from './ui';
 
-const FEAT_TR: Record<string, string> = { 'Vibration RMS': 'Titreşim (RMS)', 'Motor current': 'Motor akımı', 'Winding temperature': 'Sargı sıcaklığı', 'Pump motor current': 'Pompa motoru akımı',
-  'Casing/motor temperature': 'Gövde/motor sıcaklığı', 'Loading': 'Yüklenme', 'Winding hot-spot': 'Sargı sıcak noktası', 'Top-oil temperature': 'Üst yağ sıcaklığı' };
 const nf = (v: number) => v.toLocaleString('tr-TR', { maximumFractionDigits: 2 });
 
 export const MaintenanceView: React.FC = () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import { DigitalTwin3D } from './DigitalTwin3D';
 import { SystemSummary, DeviceRuntimeState, AlarmRecord } from '../types';
 import { KpiStrip, Panel, LinkBtn, KV } from '../platform/kit';
-import { DEVICE_META, deviceName, fmtNum, keyValue, statusTone, statusTr } from '../platform/meta';
+import { DEVICE_META, deviceName, fmtNum, keyValue, statusTone, statusTr, alarmText } from '../platform/meta';
 
 interface OverviewProps {
   summary: SystemSummary | null;
@@ -49,7 +49,7 @@ export const EnterpriseOverview: React.FC<OverviewProps> = ({ summary, devices, 
                   <li key={a.alarm_id} className="flex gap-2 items-start text-[14px]">
                     <span className="dot mt-1.5" data-tone={a.severity === 'CRITICAL' || a.severity === 'HIGH' ? 'bad' : 'warn'} />
                     <div className="min-w-0"><div className="font-medium truncate">{deviceName(a.source_device)}</div>
-                      <div style={{ color: 'var(--p-muted)', fontSize: 13 }}>{a.message} · {sevTr[a.severity]}</div></div>
+                      <div style={{ color: 'var(--p-muted)', fontSize: 13 }}>{alarmText(a)} · {sevTr[a.severity]}</div></div>
                   </li>
                 ))}
               </ul>

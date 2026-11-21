@@ -10,7 +10,7 @@ import { ProcessZone } from './3d/ProcessZone';
 import { PowerZone } from './3d/PowerZone';
 import { FacilityZone } from './3d/FacilityZone';
 import { WorkerPersonnel } from './3d/WorkerPersonnel';
-import { Lights, Floor, Normalizer, ZonePlates, AssetLayer, CameraRig, useAssetBoxes } from './3d/Scene';
+import { Lights, Floor, ZonePlates, AssetLayer, CameraRig, useAssetBoxes } from './3d/Scene';
 import { InspectorPanel } from '../platform/InspectorPanel';
 import { CustomItems, TwinEditorPanel, TwinItem } from '../platform/TwinEditor';
 import { usePoll, useTheme } from '../platform/api';
@@ -24,12 +24,13 @@ interface DigitalTwin3DProps {
   compact?: boolean;
   fill?: boolean;
   onOpenTrends?: (deviceId: string, point?: string) => void;
+  onOpenHardware?: (deviceId: string) => void;
 }
 
 const NARROW = typeof window !== 'undefined' && window.innerWidth < 640;
 const K = NARROW ? 1.9 : 1;
 const PRESETS: Record<string, { pos: [number, number, number]; target: [number, number, number] }> = {
-  overview: { pos: [34, 40, 62], target: [-2, 0, -2] },
+  overview: { pos: [27, 31, 48], target: [-1, 0, -1] },
   top: { pos: [0, 74, 0.1], target: [0, 0, -2] },
   front: { pos: [0, 12, 58], target: [0, 2, -2] },
   iso: { pos: [-36, 28, 38], target: [0, 0, -2] },
@@ -53,7 +54,6 @@ const SceneContent: React.FC<{
     <>
       <Lights dark={dark} />
       <Floor dark={dark} />
-      <Normalizer />
       <group onPointerOver={(e) => { e.stopPropagation(); hover(findId(e.object)); }} onPointerOut={() => hover(null)}>
         <FactoryArchitecture />
         {(activeZone === 'all' || activeZone === 'production') && <ProductionZone {...common} />}
@@ -75,7 +75,7 @@ const SceneContent: React.FC<{
 const ZONE_OF: Record<string, string> = { Üretim: 'production', Proses: 'process', Enerji: 'power', Tesis: 'facility' };
 const zoneOf = (id: string) => ZONE_OF[DEVICE_META[id]?.zone || ''] || 'all';
 
-export const DigitalTwin3D: React.FC<DigitalTwin3DProps> = ({ devices, onSelectDevice, selectedDeviceId, compact = false, fill = false, onOpenTrends }) => {
+export const DigitalTwin3D: React.FC<DigitalTwin3DProps> = ({ devices, onSelectDevice, selectedDeviceId, compact = false, fill = false, onOpenTrends, onOpenHardware }) => {
   const controlsRef = useRef<any>(null);
   const [activeZone, setActiveZone] = useState<string>('all');
   const [preset, setPreset] = useState<string>('overview');
@@ -92,6 +92,8 @@ export const DigitalTwin3D: React.FC<DigitalTwin3DProps> = ({ devices, onSelectD
     if (it.bind_device) onSelectDevice(it.bind_device);
   }, [editMode, onSelectDevice]);
 
+  // Yalnız geliştirmede: tarayıcı testlerinin kamerayı konumlayabilmesi için (üretim derlemesinde yok)
+  React.useEffect(() => { if (import.meta.env.DEV) (window as any).__g3cam = (pos: number[], target: number[]) => { const c = controlsRef.current; if (!c) return; c.object.position.set(pos[0], pos[1], pos[2]); c.target.set(target[0], target[1], target[2]); c.update(); }; }, []);
   const go = (p: string) => {
     const c = controlsRef.current; if (!c) return;
     const v = PRESETS[p]; c.object.position.set(v.pos[0] * K, v.pos[1] * K, v.pos[2] * K); c.target.set(...v.target); c.update(); setPreset(p);
@@ -119,7 +121,7 @@ export const DigitalTwin3D: React.FC<DigitalTwin3DProps> = ({ devices, onSelectD
         <span className="g3-hint"><MousePointerClick size={15} />{sel ? 'Seçili ekipman sağda' : 'Ayrıntı için ekipmana tıklayın'}</span>
       </div>
 
-      <div className="relative flex-1 min-h-0">
+      <div className="relative flex-1 min-h-0 overflow-hidden">{/* 3B etiketleri sahne alanında kalsın, araç çubuğunun üstüne taşmasın */}
         <div className="absolute inset-0"><Canvas camera={{ position: PRESETS.overview.pos.map(x => x * K) as [number, number, number], fov: 40, near: 0.1, far: 600 }} shadows dpr={[1, 1.75]}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
           onCreated={({ gl }) => { gl.shadowMap.type = THREE.PCFSoftShadowMap; }}
@@ -142,7 +144,7 @@ export const DigitalTwin3D: React.FC<DigitalTwin3DProps> = ({ devices, onSelectD
         {editMode ? (
           <TwinEditorPanel layout={layout || null} focusId={editFocus} onFocus={setEditFocus} onChanged={() => layoutPoll.reload()} onClose={() => { setEditMode(false); setEditFocus(null); }} />
         ) : sel ? (
-          <InspectorPanel deviceId={sel} onClose={() => onSelectDevice('')} onOpenTrends={onOpenTrends} />
+          <InspectorPanel deviceId={sel} onClose={() => onSelectDevice('')} onOpenTrends={onOpenTrends} onOpenHardware={onOpenHardware} />
         ) : null}
       </div>
     </div>

@@ -11,7 +11,8 @@ fail() { echo "$1"; read -n 1 -s -r -p "Press any key to close..."; exit 1; }
 [ -x .venv/bin/python ] || python3 -m venv .venv || fail "python3 not found"
 .venv/bin/pip install -q -r requirements.txt || fail "pip install failed"
 
-if [ ! -f frontend/dist/index.html ]; then
+# build when there is no build yet, or when sources/assets changed since the last build (stale UI otherwise)
+if [ ! -f frontend/dist/index.html ] || [ -n "$(find frontend/src frontend/public frontend/index.html frontend/package.json -newer frontend/dist/index.html 2>/dev/null | head -1)" ]; then
   (cd frontend && npm install && npm run build) || fail "frontend build failed"
 fi
 

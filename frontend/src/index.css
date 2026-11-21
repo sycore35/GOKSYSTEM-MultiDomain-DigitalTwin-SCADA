@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================================================================
    GÖKSYSTEM 3.0 — ISA-101 tarzı kontrol odası tasarım sistemi
    Renk yalnızca anormal durumu anlatır: normal = nötr gri, uyarı = amber,
    alarm = kırmızı, bilgi/odak = camgöbeği. Köşe 2–4 px, 1 px çizgi, gölge yok.

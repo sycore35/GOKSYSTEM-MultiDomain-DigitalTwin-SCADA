@@ -5,16 +5,16 @@ import { Sidebar } from './components/Sidebar';
 import { EnterpriseOverview } from './components/EnterpriseOverview';
 import { DomainView } from './components/DomainView';
 import { HistorianView } from './components/HistorianView';
-import { AlarmPanel } from './components/AlarmPanel';
 import { EventAuditView } from './components/EventAuditView';
 import { DigitalTwin3D } from './components/DigitalTwin3D';
-import { EquipmentDrawer } from './components/EquipmentDrawer';
 import { DeviceRuntimeState, AlarmRecord, SystemSummary } from './types';
 import { api, initTheme } from './platform/api';
 import { PerfView, AlarmCenter, AssetsView } from './platform/views1';
 import { TrendAnalyzer, PidStudio, ScenariosView } from './platform/views2';
 import { MaintenanceView, EnergyView, PlcView } from './platform/views3';
 import { OperatorsView, ProtocolView } from './platform/views4';
+import { HardwareView } from './platform/HardwareView';
+import { ArchitectureView } from './platform/ArchitectureView';
 import { PAGE_BY_ID } from './pages';
 import { deviceName } from './platform/meta';
 
@@ -34,6 +34,9 @@ const MainApp: React.FC = () => {
   const [connected, setConnected] = useState<boolean>(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  // Seçim sayfaya özeldir: kullanıcı başka sayfaya geçince temizlenir (yalnız "trendde aç" seçimi taşır).
+  const keepSelOnNav = useRef(false);
+  useEffect(() => { if (keepSelOnNav.current) keepSelOnNav.current = false; else setSelectedDeviceId(null); }, [currentTab]);
   const [toast, setToast] = useState<{ message: string; type: 'info' | 'warn' | 'error' | 'success' } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -180,8 +183,15 @@ const MainApp: React.FC = () => {
   const [analyzerSeries, setAnalyzerSeries] = useState<string[]>([]);
   const handleOpenTrends = (deviceId: string, pointId?: string) => {
     setSelectedDeviceId(deviceId);
+    keepSelOnNav.current = true;
     if (pointId) { setSelectedPointId(pointId); setAnalyzerSeries([`${deviceId}:${pointId}`]); }
     setCurrentTab(pointId ? 'analyzer' : 'historian');
+  };
+
+  const handleOpenHardware = (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
+    keepSelOnNav.current = true;
+    setCurrentTab('hardware');
   };
 
   const unackAlarmsCount = alarms.filter(a => a.state === 'UNACK_ALARM' || a.state === 'RTN_UNACK').length;
@@ -223,7 +233,7 @@ const MainApp: React.FC = () => {
 
           {currentTab === 'twin' && (
             <div className="flex-1 min-h-[460px]">
-              <DigitalTwin3D devices={devices} alarms={alarms} onSelectDevice={onSelect} selectedDeviceId={selectedDeviceId} onOpenTrends={handleOpenTrends} fill />
+              <DigitalTwin3D devices={devices} alarms={alarms} onSelectDevice={onSelect} selectedDeviceId={selectedDeviceId} onOpenTrends={handleOpenTrends} onOpenHardware={handleOpenHardware} fill />
             </div>
           )}
 
@@ -242,16 +252,13 @@ const MainApp: React.FC = () => {
           {currentTab === 'maintenance' && <MaintenanceView />}
           {currentTab === 'energy' && <EnergyView />}
           {currentTab === 'plc' && <PlcView />}
+          {currentTab === 'hardware' && <HardwareView initialDeviceId={selectedDeviceId} />}
+          {currentTab === 'architecture' && <ArchitectureView devices={devices} alarms={alarms} summary={summary} connected={connected} onOpenHardware={handleOpenHardware} />}
           {currentTab === 'operators' && <OperatorsView />}
           {currentTab === 'protocol' && <ProtocolView />}
           {currentTab === 'audit' && <EventAuditView />}
         </main>
       </div>
-
-      {currentTab !== 'twin' && currentTab !== 'overview' && (
-        <EquipmentDrawer deviceId={selectedDeviceId} devices={devices} alarms={alarms} onClose={() => setSelectedDeviceId(null)}
-          onCommand={handleCommand} onInjectFault={handleInjectFault} onOpenTrends={handleOpenTrends} />
-      )}
 
       <footer className="hidden md:flex h-8 px-4 items-center justify-between text-[12px] select-none shrink-0"
         style={{ borderTop: '1px solid var(--p-border)', background: 'var(--p-surface)', color: 'var(--p-muted)' }}>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Play, Pause, RotateCcw, Menu, Wifi, WifiOff, Hexagon, BellRing, ShieldCheck } from 'lucide-react';
 import { SystemSummary, AlarmRecord } from '../types';
 import { PAGE_BY_ID } from '../pages';
-import { deviceName } from '../platform/meta';
+import { deviceName, alarmText } from '../platform/meta';
 
 interface NavbarProps {
   currentTab: string;
@@ -80,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, summa
           <>
             <span className={`dot ${unack.length ? 'blink' : ''}`} data-tone={critical ? 'bad' : 'warn'} />
             <span className="font-semibold" style={{ color: critical ? 'var(--p-bad)' : 'var(--p-warn)' }}>{critical ? 'Alarm' : 'Uyarı'}</span>
-            <span className="truncate" style={{ color: 'var(--p-text)' }}>{top ? `${deviceName(top.source_device)} — ${top.message}` : ''}</span>
+            <span className="truncate" style={{ color: 'var(--p-text)' }}>{top ? `${deviceName(top.source_device)} — ${alarmText(top)}` : ''}</span>
             {active.length > 1 && <span className="font-value shrink-0" style={{ color: 'var(--p-muted)' }}>+{active.length - 1}</span>}
           </>
         )}

@@ -32,11 +32,13 @@ export function usePoll<T = any>(path: string | null, intervalMs = 2000) {
     finally { if (alive.current) setLoading(false); }
   }, [path]);
   useEffect(() => {
-    alive.current = true; setLoading(true); load();
+    alive.current = true;
+    if (!path) { setLoading(false); return () => { alive.current = false; }; }   // yol yoksa yüklenmez, gösterge takılı kalmaz
+    setLoading(true); load();
     if (intervalMs <= 0) return () => { alive.current = false; };
     const id = setInterval(load, intervalMs);
     return () => { alive.current = false; clearInterval(id); };
-  }, [load, intervalMs]);
+  }, [load, intervalMs, path]);
   return { data, error, loading, reload: load };
 }
 

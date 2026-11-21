@@ -63,6 +63,7 @@ def build_inspection(engine, store, tsdb, device_id: str, window_s: float = 120.
         "telemetry": {k: {"value": v.value, "unit": v.unit, "quality": v.quality.value} for k, v in tel.items()},
         "alarms": [a.model_dump() for a in dev_alarms],
         "alarm_history": [e for e in events if e["source_device"] == device_id][:12],
+        "runtime": engine.runtime.history(device_id) if getattr(engine, "runtime", None) else None,
         "trend": trend,
         "trend_units": units,
         "trend_window_s": window_s,
